@@ -46,3 +46,6 @@ db = SQLAlchemy(app)
 # SQLAlchemy 사용
 ```
 
+### DB 수정 시 commit을 하는 이유
+
+commit을 하기 전까지 transaction은 실제로 DB에서 이루어지지 않는다. commit을 하게 되면 쌓인 transaction들을 수행한다. 이 때, 사용되는 data record나 table은 lock을 걸어서 동시에 다수의 session에서 접근을 할 수 없게 한다. 그래서 데이터의 무결성을 유지한다.
