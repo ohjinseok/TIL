@@ -128,6 +128,147 @@ return render(request, 'index.html', context)
 word = request.GET.get('word')
 ```
 
+```html
+<!-- base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}{% endblock %}</title>
+</head>
+<body>
+    {% block body%}
+    
+    {% endblock %}
+</body>
+</html>
+```
+
+> django - base.html
+>
+> flask - layout.html
+
+### Model 조작
+
+- django ORM을 이용한 DB 조작
+
+```python
+# models.py
+# Create your models here.
+class Article(models.Model):
+    title = models.TextField()
+    content = models.TextField()
+```
+
+```sh
+python manage.py makemirations
+python manage.py migrate
+python manage.py shell #django의 현 상태를 지닌 shell 띄우기
+python manage.py sqlmigrate application table
+# migration을 만드는 이유
+# git의 commit과 비슷하다
+# 버전을 쉽게 관리할 수 있다. 원하는 부분으로 롤백 할 수 있다.
+```
+
+```python
+from articles.models import Article
+a = Article(title="happy", content="hacking")
+a.save()
+Article.objects.all()
+# 출력 format이 마음에 안 들 때, class에서 __repr__ 변경
+# <QuerySet [제목: happy, 내용: hacking, 제목: 와 여기서도 글이 써진다!!, 내용: 쟝고 분노의 추적자]>
+
+Article.objects.all()[0]
+# 제목: happy, 내용: hacking
+
+Article.objects.all()[1]
+제목: 와 여기서도 글이 써진다!!, 내용: 쟝고 분노의 추적자
+
+len(Article.objects.all())
+# 2
+
+for a in Article.objects.all():
+...     print(a)
+# Article object (1)
+# Article object (2)
+# 위를 변경하기 위해서는 __str__ 함수 정의
+
+for a in Article.objects.all():
+...     a
+# 제목: happy, 내용: hacking
+# 제목: 와 여기서도 글이 써진다!!, 내용: 쟝고 분노의 추적자
+
+Article.objects.filter(title="happy").all()
+# <QuerySet [제목: happy, 내용: hacking]>
+
+Article.objects.filter(content="hacking").first()
+# 제목: happy, 내용: hacking
+
+Article.objects.filter(content="hacking").count()
+# 1
+
+Article.objects.get(pk=1)
+# 제목: happy, 내용: hacking
+
+Article.objects.get(id=1)
+# 제목: happy, 내용: hacking
+
+Article.objects.get(title="happy")
+# 제목: happy, 내용: hacking
+
+a = Article.objects.get(id=1)
+a.content = "Thursday"
+a.save()
+Article.objects.get(id=1)
+# 제목: happy, 내용: Thursday
+
+Article.objects.order_by('id').all()
+# <QuerySet [제목: happy, 내용: Thursday]>
+
+Article.objects.create(title="hey", content="create")
+# 제목: hey, 내용: create
+        
+Article.objects.all()
+# <QuerySet [제목: happy, 내용: Thursday, 제목: title test, 내용: content test, 제목: hey, 내용: create]>
+# save 방식으로 하는 것 추천
+
+Article.objects.order_by('id').all()
+# <QuerySet [제목: happy, 내용: Thursday, 제목: title test, 내용: content test, 제목: hey, 내용: create]>
+Article.objects.order_by('-id').all()
+# <QuerySet [제목: hey, 내용: create, 제목: title test, 내용: content test, 제목: happy, 내용: Thursday]>
+```
+
+### Admin 관리
+
+```python
+# admin.py
+from .models import table
+
+# Register your models here.
+admin.site.register(table)
+```
+
+![1550126448342](assets/1550126448342.png)
+
+```sh
+python manage.py createsuperuser
+```
+
+```python
+class JobAdmin(admin.ModelAdmin):
+    list_display = ('name', 'job')
+    
+admin.site.register(Student, StudentAdmin)
+```
+
+![1550126413418](assets/1550126413418.png)
+
+* descriptive programming (modern framework의 특징)
+
+
+
 
 
 legacy code
