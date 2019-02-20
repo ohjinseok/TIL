@@ -164,9 +164,10 @@ class Article(models.Model):
 
 ```sh
 python manage.py makemirations
-python manage.py migrate
-python manage.py shell #django의 현 상태를 지닌 shell 띄우기
 python manage.py sqlmigrate application table
+python manage.py migrate
+python manage.py shell # django의 현 상태를 지닌 shell 띄우기
+python manage.py dbshell # sql shell 띄우기
 # migration을 만드는 이유
 # git의 commit과 비슷하다
 # 버전을 쉽게 관리할 수 있다. 원하는 부분으로 롤백 할 수 있다.
@@ -291,6 +292,220 @@ admin.site.register(Student, StudentAdmin)
 ```
 
 templates 폴더와 같은 level에 static 폴더 생성
+
+### 게시판 프로젝트
+
+```sh
+pip install ipython django-extensions
+# django-extensions 가 깔려 있고 ipython이 깔려 있으면
+# shell을 ipython으로 바꿔준다.
+```
+
+```python
+# INSTALLED_APPS에 추가
+'django_extensions',
+```
+
+#### 표준 CRUD url 구성
+
+**RESTful (API)**
+
+* R
+  * /articles/ 	- list
+  * /articles/1      - detail
+* C
+  * /articles/new 	- new(작성)
+  * /articles/create     - create(DB 저장)
+* U
+  * /articles/1/edit     - edit
+  * /articles/1/update     - update
+* D
+  * /articles/1/delete 		- delete
+
+url에 articles가 계속해서 반복 - sub 문지기 생성
+
+해당하는 app 안에 urls.py 생성
+
+![1550625096217](assets/1550625096217.png)
+
+```python
+# articles/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.index),
+]
+```
+
+```python
+from django.contrib import admin
+from django.urls import path, include # import include
+from articles import views
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('articles/', include('articles.urls')), 
+    # include /articles/urls.py
+]
+```
+
+#### CREATE
+
+```python
+# views.py
+from django.shortcuts import render, redirect
+from  .models import Article
+
+# Create your views here.   
+def new(request):
+    return render(request, 'articles/new.html')
+    
+def create(request):
+    # DB에 저장
+    # title = request.GET.get('title')
+    # content = request.GET.get('content')
+    # GET 방식으로 CREATE 수행 X
+    
+    title = request.POST.get('title')
+    content = request.POST.get('content')
+    
+    article = Article(title=title, content=content)
+    article.save()
+    
+    return redirect('/articles/')
+```
+
+```html
+<!-- POST 방식으로 변환 -->
+<!-- new.html -->
+<h1>게시글 작성</h1>
+<form action="/articles/create/" method='POST'>
+    제 목 : <input type="text" name="title"/>
+    내 용 : <input type="text" name="content"/>
+    <input type="submit" value="Submit"/>
+    {% csrf_token %} <!-- django 에서 발행하는 csrf_token-->
+    <!-- 도장처럼 csrf_token이 찍혀있어야 create 접근 가능-->
+</form>
+```
+
+``` python
+# urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.index),
+    path('new/', views.new),
+    path('create/', views.create),
+]
+```
+
+#### READ
+
+```python
+# views.py
+def index(request):
+    # articles = Article.objects.all()
+    articles = Article.objects.order_by('-id').all()
+    # 역순
+    context = {
+        'articles': articles,
+    }
+    return render(request, 'articles/index.html', context)
+
+def detail(request, article_id):
+    article = Article.objects.get(id=article_id)
+    context = {
+        'article' : article,
+    }
+    return render(request, 'articles/detail.html', context)
+```
+
+```python
+# urls.py
+urlpatterns = [
+	path('<int:article_id>/', views.detail),
+]
+```
+
+```html
+<h1>게시글</h1>
+<h3>{{ article.title }}</h3>
+<p>{{ article.content }}</p>
+
+<a href="/articles/">돌아가기</a>
+```
+
+#### UPDATE
+
+#### DELETE
+
+#### URL rename
+
+```python
+# urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.index, name="index"),
+    path('new/', views.new, name="new"),
+    path('create/', views.create, name="create"),
+    path('<int:article_id>/', views.detail, name="detail"),
+    path('<int:article_id>/edit/', views.edit, name="edit"),
+    path('<int:article_id>/update/', views.update, name="update"),
+    path('<int:article_id>/delete/', views.delete, name="delete"),
+]
+# name 별명 같은 것
+```
+
+```python
+return redirect('index') # redirect를 이와 같이 쓸 수 있음
+```
+
+```html
+<a href="{% url 'edit' article.id %}">수 정</a>
+<a href="{% url 'delete' article.id %}">삭 제</a>
+<a href="{% url 'index' %}">돌아가기</a>
+<!-- 변수는 차례대로 뒤에 붙여주면 됨 -->
+```
+
+#### etc pages
+
+models 같은 것들이 필요없고 단일 페이지만 존재하는 것들을 주로 pages라는 app으로 만들어서 관리함(선생님 스타일)
+
+render할 때, 모든 앱들을 똑같은 레벨에서 검사
+
+동일한 파일이 있다면, INSTALLED_APPS에서 먼저 써져 있는 app의 template을 render한다. 
+
+하지만 헷갈리므로, templates 폴더 안에 app 이름과 같은 폴더를 만들어주고 그 안에서 template을 관리하도록 한다.
+
+그리고 render에서 명시적으로 어느 app 안에 있는 지 써주도록 한다.
+
+templates에 있는 파일은 어떤 app에서도 공유한다. 
+
+'base.html' 같은 중립 파일은 project 폴더 아래 templates 폴더를 생성해서 넣어준다.
+
+project 폴더 아래에서 templates 폴더를 관리할 경우 settings.py에서 명시를 해줘야 한다.
+
+ ```python
+# settings.py
+
+TEMPLATES [
+    # ...
+    'DIRS': [os.path.join(BASE_DIR, 'board', 'templates')],
+    # ...
+]
+# os.path.join을 쓰는 이유
+# os에 맞게 경로를 생성해준다.
+ ```
+
+
+
+
 
 
 
