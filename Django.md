@@ -164,8 +164,8 @@ class Article(models.Model):
 
 ```sh
 python manage.py makemirations
-python manage.py sqlmigrate application table
 python manage.py migrate
+python manage.py sqlmigrate application table
 python manage.py shell # django의 현 상태를 지닌 shell 띄우기
 python manage.py dbshell # sql shell 띄우기
 # migration을 만드는 이유
