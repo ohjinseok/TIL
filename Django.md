@@ -185,7 +185,7 @@ Article.objects.all()[0]
 # 제목: happy, 내용: hacking
 
 Article.objects.all()[1]
-제목: 와 여기서도 글이 써진다!!, 내용: 쟝고 분노의 추적자
+# 제목: 와 여기서도 글이 써진다!!, 내용: 쟝고 분노의 추적자
 
 len(Article.objects.all())
 # 2
